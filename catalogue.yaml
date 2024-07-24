@@ -1,0 +1,66 @@
+- name: Playbook to configure catalogue
+  hosts: catalogue
+  become: yes
+  vars:
+   MONGODB-SERVER-IPADDRESS: "10.0.0.48"
+  tasks:
+    - name: Disabling NodeJS version
+      ansible.builtin.command:
+        cmd: dnf module disable nodejs -y
+
+    - name: Enabling NodeJS 18 version
+      ansible.builtin.command:
+        cmd: dnf module enable nodejs:18 -y
+    
+    - name: Create a user roboshop
+      ansible.builtin.user:
+        name: roboshop
+
+    - name: Create a directory
+      ansible.builtin.file:
+        name: /app
+        state: directory
+    
+    - name: Downloading the catalogue application code
+      ansible.builtin.get_url:
+        url: https://roboshop-builds.s3.amazonaws.com/catalogue.zip
+        dest: /tmp/
+
+    - name: Extracting the downloaded application code to app directory
+      ansible.builtin.unarchive:
+        src: /tmp/catalogue.zip
+        dest: /app
+        remote_src: yes
+
+    - name: Installing catalogue application
+      ansible.builtin.command:
+        cmd: npm install
+        args:
+          chdir: /app
+
+    - name: copy catalogue service to system service path
+      ansible.builtin.copy:
+        src: catalogue.service
+        dest: /etc/systemd/system/catalogue.service
+
+    - name: copy mongodb repository to yum repository location
+      ansible.builtin.copy:
+        src: mongo.repo
+        dest: /etc/yum.repos.d/mongo.repo
+
+    - name: Installing MongoDB client
+      ansible.builtin.command:
+        cmd: dnf install mongodb-org-shell -y
+
+    - name: Loading the schemas to MongoDB server
+      ansible.builtin.shell:
+        cmd: mongo --host "{{MONGODB-SERVER-IPADDRESS}}" < /app/schema/catalogue.js
+
+    - name: Load the deamon service and enable and start the service
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+        enabled: true
+        state: started
+       
+
+    

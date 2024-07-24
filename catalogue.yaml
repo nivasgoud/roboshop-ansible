@@ -2,7 +2,7 @@
   hosts: catalogue
   become: yes
   vars:
-   MONGODB-SERVER-IPADDRESS: "10.0.0.48"
+    MONGODB-SERVER-IPADDRESS: "10.0.0.48"
   tasks:
     - name: Disabling NodeJS version
       ansible.builtin.command:

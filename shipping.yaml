@@ -50,6 +50,11 @@
     - name: Loading the schemas to MySQL Database
       ansible.builtin.shell:
         cmd: mysql -h "{{MYSQLIPADDRESS}}" -uroot -pRoboShop@1 < /app/schema/shipping.sql 
+    
+    - name: copy shipping service to system service path
+      ansible.builtin.copy:
+        src: shipping.service
+        dest: /etc/systemd/system/shipping.service
 
     - name: Load the deamon service and enable and start the service
       ansible.builtin.systemd_service:

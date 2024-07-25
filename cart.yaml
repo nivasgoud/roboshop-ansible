@@ -2,7 +2,7 @@
   hosts: cart
   become: yes
   tasks:
-     - name: Disabling NodeJS version
+    - name: Disabling NodeJS version
       ansible.builtin.command:
         cmd: dnf module disable nodejs -y
 

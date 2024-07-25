@@ -1,0 +1,71 @@
+- name: Playbook to install and configure user service
+  hosts: user
+  become: yes
+ 
+  vars:
+    MONGODBIPADDRESS: "mongodb.nivasdevops.online"
+  
+  tasks:
+    - name: Disabling NodeJS version
+      ansible.builtin.command:
+        cmd: dnf module disable nodejs -y
+
+    - name: Enabling NodeJS 18 version
+      ansible.builtin.command:
+        cmd: dnf module enable nodejs:18 -y
+    
+    - name: Create a user roboshop
+      ansible.builtin.user:
+        name: roboshop
+
+    - name: Installing NodeJS
+      ansible.builtin.dnf:
+        name: nodejs
+        state: present
+
+    - name: Create a directory
+      ansible.builtin.file:
+        name: /app
+        state: directory
+    
+    - name: Downloading the user application code
+      ansible.builtin.get_url:
+        url: https://roboshop-builds.s3.amazonaws.com/user.zip
+        dest: /tmp/
+
+    - name: Extracting the downloaded application code to app directory
+      ansible.builtin.unarchive:
+        src: /tmp/user.zip
+        dest: /app
+        remote_src: yes
+    
+    - name: Installing user application
+      ansible.builtin.command:
+        cmd: npm install
+      args:
+        chdir: /app
+    
+    - name: copy user service to system service path
+      ansible.builtin.copy:
+        src: user.service
+        dest: /etc/systemd/system/user.service
+
+    - name: copy mongodb repository to yum repository location
+      ansible.builtin.copy:
+        src: mongo.repo
+        dest: /etc/yum.repos.d/mongo.repo
+
+    - name: Installing MongoDB client
+      ansible.builtin.command:
+        cmd: dnf install mongodb-org-shell -y
+
+    - name: Loading the schemas to MongoDB server
+      ansible.builtin.shell:
+        cmd: mongo --host "{{MONGODBIPADDRESS}}" < /app/schema/user.js
+    
+    - name: Load the deamon service and enable and start the service
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+        enabled: true
+        name: user
+        state: started   

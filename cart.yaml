@@ -1,0 +1,54 @@
+- name: Playbook to install and configure cart service
+  hosts: cart
+  become: yes
+  tasks:
+     - name: Disabling NodeJS version
+      ansible.builtin.command:
+        cmd: dnf module disable nodejs -y
+
+    - name: Enabling NodeJS 18 version
+      ansible.builtin.command:
+        cmd: dnf module enable nodejs:18 -y
+    
+    - name: Create a user roboshop
+      ansible.builtin.user:
+        name: roboshop
+
+    - name: Installing NodeJS
+      ansible.builtin.dnf:
+        name: nodejs
+        state: present
+
+    - name: Create a directory
+      ansible.builtin.file:
+        name: /app
+        state: directory
+    
+    - name: Downloading the cart application code
+      ansible.builtin.get_url:
+        url: https://roboshop-builds.s3.amazonaws.com/cart.zip
+        dest: /tmp/
+
+    - name: Extracting the downloaded application code to app directory
+      ansible.builtin.unarchive:
+        src: /tmp/cart.zip
+        dest: /app
+        remote_src: yes
+    
+    - name: Installing cart application
+      ansible.builtin.command:
+        cmd: npm install
+      args:
+        chdir: /app
+    
+    - name: copy cart service to system service path
+      ansible.builtin.copy:
+        src: cart.service
+        dest: /etc/systemd/system/cart.service
+    
+    - name: Load the deamon service and enable and start the service
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+        enabled: true
+        name: cart
+        state: started   

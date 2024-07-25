@@ -2,7 +2,7 @@
   hosts: shipping
   become: yes
   vars:
-    MYSQLIPADDRESS: "msql.nivasdevops.online"
+    MYSQLIPADDRESS: "mysql.nivasdevops.online"
 
   tasks:
     - name: Install Maven to pack shipping code written in Java (Java Packing tool)

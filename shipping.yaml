@@ -1,0 +1,65 @@
+- name: Playbook to Install and Configure Shipping service
+  hosts: shipping
+  become: yes
+  vars:
+    MYSQLIPADDRESS: "msql.nivasdevops.online"
+
+  tasks:
+    - name: Install Maven to pack shipping code written in Java (Java Packing tool)
+      ansible.builtin.dnf:
+        name: maven
+        state: present
+        register: mvn_result
+
+    - name: "Maven clean task output"
+      ansible.builtin.debug:
+        msg: "{{mvn_result}}"
+        
+    - name: Create a user roboshop
+      ansible.builtin.user:
+        name: roboshop
+
+    - name: Create a directory
+      ansible.builtin.file:
+        name: /app
+        state: directory
+    
+    - name: Downloading the shipping application code
+      ansible.builtin.get_url:
+        url: https://roboshop-builds.s3.amazonaws.com/shipping.zip
+        dest: /tmp/
+
+    - name: Extracting the downloaded application code to app directory
+      ansible.builtin.unarchive:
+        src: /tmp/shipping.zip
+        dest: /app
+        remote_src: yes
+    
+    - name: Download the dependecies and build the application using Maven
+      ansible.builtin.command:
+        cmd: mvn clean package
+      args:
+        chdir: /app
+    
+    - name: Renaming the shipping jar file from version to normal
+      ansible.builtin.file:
+        src: target/shipping-1.0.jar
+        dest: shipping.jar
+      args:
+        chdir: /app
+    
+    - name: Install MySQL Server to load shipping schema to MYSQL Database
+      ansible.builtin.dnf:
+        name: mysql
+        state: present
+
+    - name: Loading the schemas to MySQL Database
+      ansible.builtin.shell:
+        cmd: mysql -h "{{MYSQLIPADDRESS}}"" -uroot -pRoboShop@1 < /app/schema/shipping.sql 
+
+    - name: Load the deamon service and enable and start the service
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+        enabled: true
+        name: shipping
+        state: started

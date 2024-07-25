@@ -9,12 +9,7 @@
       ansible.builtin.dnf:
         name: maven
         state: present
-        register: mvn_result
 
-    - name: "Maven clean task output"
-      ansible.builtin.debug:
-        msg: "{{mvn_result}}"
-        
     - name: Create a user roboshop
       ansible.builtin.user:
         name: roboshop
@@ -40,6 +35,11 @@
         cmd: mvn clean package
       args:
         chdir: /app
+      register: mvn_result
+
+    - name: "Maven clean task output"
+      ansible.builtin.debug:
+        msg: "{{mvn_result}}"
     
     - name: Renaming the shipping jar file from version to normal
       ansible.builtin.file:

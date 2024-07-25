@@ -35,16 +35,10 @@
         cmd: mvn clean package
       args:
         chdir: /app
-      register: mvn_result
 
-    - name: "Maven clean task output"
-      ansible.builtin.debug:
-        msg: "{{mvn_result}}"
-    
     - name: Renaming the shipping jar file from version to normal
-      ansible.builtin.file:
-        src: target/shipping-1.0.jar
-        dest: shipping.jar
+      ansible.builtin.command:
+        cmd: mv target/shipping-1.0.jar shipping.jar
       args:
         chdir: /app
     

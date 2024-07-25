@@ -1,0 +1,48 @@
+- name: Playbook to Install and Configure Disptach Service
+  hosts: dispatch
+  become: yes
+  tasks:
+    - name: Installing GoLang
+      ansible.builtin.dnf:
+        name: golang
+        state: present 
+
+    - name: Create a user roboshop
+      ansible.builtin.user:
+        name: roboshop
+
+    - name: Create a directory
+      ansible.builtin.file:
+        name: /app
+        state: directory
+    
+    - name: Downloading the dispatch application code
+      ansible.builtin.get_url:
+        url: https://roboshop-builds.s3.amazonaws.com/dispatch.zip
+        dest: /tmp/
+
+    - name: Extracting the downloaded application code to app directory
+      ansible.builtin.unarchive:
+        src: /tmp/dispatch.zip
+        dest: /app
+        remote_src: yes
+
+    - name: Download the dependencies and build the application
+      ansible.builtin.shell: |
+        go mod init dispatch
+        go get 
+        go build
+      args:
+        chdir: /app
+    
+    - name: copy dispatch service to system service path
+      ansible.builtin.copy:
+        src: dispatch.service
+        dest: /etc/systemd/system/dispatch.service
+    
+    - name: Load the deamon service and enable and start the service
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+        enabled: true
+        name: dispatch
+        state: started   
